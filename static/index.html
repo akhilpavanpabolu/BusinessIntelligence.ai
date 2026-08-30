@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BusinessIntelligence.ai</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon"></div>
+                <h2>BI.ai</h2>
+            </div>
+
+            <div class="persona-selector">
+                <label for="persona">Current Persona:</label>
+                <select id="persona">
+                    <option value="CMO">CMO (Global)</option>
+                    <option value="Regional Manager - NA">Regional Manager - NA</option>
+                </select>
+            </div>
+
+            <div class="persona-selector" style="margin-top:-16px;">
+                <label for="scenario">Simulation Scenario:</label>
+                <select id="scenario">
+                    <option value="normal">1. Normal Operations</option>
+                    <option value="revenue_drop">2. Anomaly: Revenue Drop</option>
+                    <option value="delayed_ga">3. Data Delay (Abstention)</option>
+                    <option value="sparse_history">4. Sparse History (New Launch)</option>
+                    <option value="contradictory">5. Contradictory Signal</option>
+                    <option value="custom">6. Custom Data (Uploaded)</option>
+                </select>
+                <small style="color:var(--text-secondary); display:block; margin-bottom: 8px;">Mutates deterministic
+                    data</small>
+                <div style="display: flex; gap: 8px; flex-direction: column;">
+                    <input type="file" id="csv-upload" accept=".csv" style="display:none;" />
+                    <button id="btn-upload-ui"
+                        style="background:var(--accent-color); border:none; color:white; padding:8px 12px; border-radius:6px; cursor:pointer; font-size: 13px; font-weight: 500; text-align: center;">Upload
+                        Custom CSV</button>
+                </div>
+            </div>
+
+            <nav class="kpi-nav">
+                <h3>Tracked KPIs</h3>
+                <ul id="kpi-list">
+                    <!-- KPI list injected via JS -->
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Dashboard -->
+        <main class="dashboard">
+            <header>
+                <h1>KPI Intelligence Engine V3</h1>
+                <div class="telemetry">
+                    <span class="telemetry-badge" id="latency-badge" title="Analytics Latency vs LLM Latency">Latency:
+                        --</span>
+                    <span class="telemetry-badge" id="llm-badge">LLM: --</span>
+                    <span class="telemetry-badge" id="token-badge">Tokens: --</span>
+                    <span class="telemetry-badge" id="cost-badge">Cost: --</span>
+                </div>
+            </header>
+
+            <div class="content-area">
+                <!-- Select KPI State -->
+                <div id="empty-state" class="glass-panel text-center">
+                    <h2>Select a KPI to analyze</h2>
+                    <p>The engine will reconcile data and generate actionable insights.</p>
+                </div>
+
+                <!-- Analysis State (Hidden by default) -->
+                <div id="analysis-state" class="hidden">
+                    <div class="kpi-header glass-panel">
+                        <div class="kpi-title-row">
+                            <h2 id="kpi-name">Revenue (NA)</h2>
+                            <span class="status-badge" id="kpi-status">Anomaly Detected</span>
+                        </div>
+                        <div class="kpi-metrics">
+                            <div class="metric-block">
+                                <span class="metric-label">Current</span>
+                                <span class="metric-value" id="kpi-current">$124k</span>
+                            </div>
+                            <div class="metric-block">
+                                <span class="metric-label">Previous</span>
+                                <span class="metric-value" id="kpi-previous">$135k</span>
+                            </div>
+                            <div class="metric-block">
+                                <span class="metric-label">Change</span>
+                                <span class="metric-value change-negative" id="kpi-change">-8.1%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="insight-grid">
+                        <!-- Left Column: Narrative and Actions -->
+                        <div class="main-column">
+                            <div class="glass-panel section-card">
+                                <h3><span class="icon">✨</span> AI Narrative Synthesis</h3>
+                                <p id="narrative-text" class="narrative-text">Loading narrative...</p>
+
+                                <div class="feedback-ui" style="margin-top: 16px; display:flex; gap: 8px;">
+                                    <input type="text" id="feedback-comment"
+                                        placeholder="Identify driver to vote on (e.g. Traffic)..."
+                                        style="flex:1; background:var(--bg-base); border:1px solid var(--border-color); color:white; padding:8px; border-radius:4px; font-size:13px;" />
+                                    <button onclick="submitFeedback(true)"
+                                        style="background:var(--bg-hover); border:1px solid var(--border-color); color:white; padding:8px 12px; border-radius:4px; cursor:pointer;"
+                                        title="Upvote this driver ranking">👍</button>
+                                    <button onclick="submitFeedback(false)"
+                                        style="background:var(--bg-hover); border:1px solid var(--border-color); color:white; padding:8px 12px; border-radius:4px; cursor:pointer;"
+                                        title="Downvote this driver (will demote next run)">👎</button>
+                                </div>
+                            </div>
+
+                            <div class="glass-panel section-card">
+                                <h3><span class="icon">💬</span> Conversational Query</h3>
+                                <div style="display:flex; gap: 8px;">
+                                    <input type="text" id="chat-input" placeholder="Ask a follow-up question..."
+                                        style="flex:1; background:var(--bg-base); border:1px solid var(--border-color); color:white; padding:10px; border-radius:6px; font-size:14px;" />
+                                    <button onclick="submitChat()"
+                                        style="background:var(--accent-color); border:none; color:white; padding:10px 16px; border-radius:6px; cursor:pointer; font-weight:600;">Ask</button>
+                                </div>
+                                <p id="chat-response"
+                                    style="margin-top: 12px; font-size: 14px; color: #d4d4d8; display:none; padding:12px; background:rgba(255,255,255,0.05); border-radius:6px;">
+                                </p>
+                            </div>
+
+                            <div class="glass-panel section-card">
+                                <h3><span class="icon">⚡</span> Recommended Actions</h3>
+                                <div id="actions-container" class="actions-list">
+                                    <!-- Actions injected via JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Evidence and Lineage (Deterministic) -->
+                        <div class="side-column">
+                            <div class="glass-panel section-card evidence-panel">
+                                <h3><span class="icon">🔍</span> Structured Evidence</h3>
+                                <div class="evidence-item">
+                                    <strong>Source System</strong>
+                                    <span id="ev-source">Stripe</span>
+                                </div>
+                                <div class="evidence-item">
+                                    <strong>Observation</strong>
+                                    <span id="ev-obs">-8%</span>
+                                </div>
+                                <div class="evidence-item">
+                                    <strong>Data Freshness</strong>
+                                    <span id="ev-freshness">Just now</span>
+                                </div>
+                                <div class="evidence-item">
+                                    <strong>Analytical Method</strong>
+                                    <span id="ev-method">Statistical Z-Score</span>
+                                </div>
+                                <div class="evidence-item" style="border-bottom:none;">
+                                    <strong>Confidence Score</strong>
+                                    <span id="ev-confidence" class="confidence-high">100%</span>
+                                </div>
+                            </div>
+
+                            <div class="glass-panel section-card evidence-panel">
+                                <h3><span class="icon">🔀</span> Data Lineage</h3>
+                                <div id="lineage-container"
+                                    style="display:flex; flex-direction:column; gap:8px; font-size:13px; color:var(--text-secondary); margin-top:12px;">
+                                    <!-- Lineage injected here -->
+                                </div>
+                            </div>
+
+                            <div class="glass-panel section-card drivers-panel">
+                                <h3><span class="icon">📊</span> Deterministic Drivers</h3>
+                                <ul id="drivers-list" class="drivers-list">
+                                    <!-- Drivers injected via JS -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+
+</html>
